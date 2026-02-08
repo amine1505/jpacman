@@ -98,9 +98,12 @@ public abstract class Game implements LevelObserver {
      */
     public void move(Player player, Direction direction) {
         if (isInProgress()) {
-            // execute player move.
             getLevel().move(player, direction);
             pointCalculator.pacmanMoved(player, direction);
+            
+            if (!getLevel().isInProgress()) {
+                stop();
+            }
         }
     }
 
