@@ -79,6 +79,16 @@ public class Level {
     private final Set<LevelObserver> observers;
 
     /**
+     * The initial positions of players.
+     */
+    private final Map<Player, Square> playerStartPositions;
+
+    /**
+     * The initial positions of ghosts.
+     */
+    private final Map<Ghost, Square> ghostStartPositions;
+
+    /**
      * Creates a new level for the board.
      *
      * @param board
@@ -107,6 +117,14 @@ public class Level {
         this.players = new ArrayList<>();
         this.collisions = collisionMap;
         this.observers = new HashSet<>();
+        this.playerStartPositions = new HashMap<>();
+        this.ghostStartPositions = new HashMap<>();
+        
+        for (Ghost ghost : ghosts) {
+            if (ghost.hasSquare()) {
+                ghostStartPositions.put(ghost, ghost.getSquare());
+            }
+        }
     }
 
     /**
@@ -147,6 +165,7 @@ public class Level {
         players.add(player);
         Square square = startSquares.get(startSquareIndex);
         player.occupy(square);
+        playerStartPositions.put(player, square);
         startSquareIndex++;
         startSquareIndex %= startSquares.size();
     }
@@ -189,6 +208,11 @@ public class Level {
                 for (Unit occupant : occupants) {
                     collisions.collide(unit, occupant);
                 }
+                
+                if (hasPlayerLostLife()) {
+                    stop();
+                    return;
+                }
             }
             updateObservers();
         }
@@ -203,6 +227,8 @@ public class Level {
             if (isInProgress()) {
                 return;
             }
+            
+            revivePlayersWithRemainingLives();
             startNPCs();
             inProgress = true;
             updateObservers();
@@ -220,6 +246,7 @@ public class Level {
             }
             stopNPCs();
             inProgress = false;
+            updateObservers();
         }
     }
 
@@ -246,6 +273,28 @@ public class Level {
             ScheduledExecutorService schedule = entry.getValue();
             assert schedule != null;
             schedule.shutdownNow();
+        }
+    }
+
+    /**
+     * Resets all players and ghosts to their initial positions.
+     */
+    private void resetPositions() {
+        playerStartPositions.forEach((player, square) -> player.occupy(square));
+        ghostStartPositions.forEach((ghost, square) -> ghost.occupy(square));
+    }
+
+    private boolean hasPlayerLostLife() {
+        return players.stream().anyMatch(p -> !p.isAlive() && p.getRemainingLives() > 0);
+    }
+
+    private void revivePlayersWithRemainingLives() {
+        for (Player player : players) {
+            if (!player.isAlive() && player.getRemainingLives() > 0) {
+                resetPositions();
+                player.setAlive(true);
+                return;
+            }
         }
     }
 
@@ -284,7 +333,7 @@ public class Level {
      */
     public boolean isAnyPlayerAlive() {
         for (Player player : players) {
-            if (player.isAlive()) {
+            if (player.isAlive() || player.getRemainingLives() > 0) {
                 return true;
             }
         }

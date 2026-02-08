@@ -35,6 +35,11 @@ public class Player extends Unit {
     private boolean alive;
 
     /**
+     * The number of lives remaining for this player.
+     */
+    private int remainingLives;
+
+    /**
      * {@link Unit} iff this player died by collision, <code>null</code> otherwise.
      */
     private Unit killer;
@@ -50,6 +55,7 @@ public class Player extends Unit {
     protected Player(Map<Direction, Sprite> spriteMap, AnimatedSprite deathAnimation) {
         this.score = 0;
         this.alive = true;
+        this.remainingLives = 3;
         this.sprites = spriteMap;
         this.deathSprite = deathAnimation;
         deathSprite.setAnimating(false);
@@ -127,5 +133,25 @@ public class Player extends Unit {
      */
     public void addPoints(int points) {
         score += points;
+    }
+
+    /**
+     * Returns the number of lives remaining for this player.
+     *
+     * @return The number of remaining lives.
+     */
+    public int getRemainingLives() {
+        return remainingLives;
+    }
+
+    /**
+     * Makes the player lose a life. If no lives remain, the player dies.
+     *
+     * @return true if the player still has lives remaining, false otherwise.
+     */
+    public boolean loseLife() {
+        remainingLives--;
+        setAlive(false);
+        return remainingLives > 0;
     }
 }
